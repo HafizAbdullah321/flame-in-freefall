@@ -10,7 +10,7 @@
 
 1. Launch dashboard from the project directory:
    ```bash
-   streamlit run flame-in-freefall/app/streamlit_app.py
+   streamlit run app/streamlit_app.py
    ```
 2. Confirm the Three.js WebGL flame renders at **60 FPS** (check the top-right FPS counter in the 3D flame panel).
 3. Verify the sidebar persona selector is visible (default: *All Perspectives*).
@@ -24,7 +24,7 @@
 * **Visual:** Open on Tab 1 (*Simulation and analytics*) with the 3D flame rendering a quiescent blue sphere ($0g$).
 * **Spoken Pitch:**  
   *"Fire in space is silent, spherical, and counter-intuitive. On Earth, gravity drives hot gas upward at 1 to 2 meters per second, creating flickering yellow flames. But in microgravity, gravitational buoyancy drops to zero ($Gr \to 0$). Flames become quiescent blue spheres that quickly choke in their own exhaust.*  
-  *Here is the spaceflight paradox: while still flames choke, a gentle cabin draft of just **1 to 10 centimeters per second** sweeps away exhaust and continuously supplies fresh oxygen, causing aggressive, catastrophic fire spread along spacecraft walls.*  
+  *Here is the spaceflight paradox: while still flames choke, a gentle cabin draft of just **1 to 10 centimeters per second** sweeps away exhaust and continuously supplies fresh oxygen, causing aggressive, unpredictable fire spread along spacecraft walls.*  
   *NASA has 24 flight investigations and 12+ Terabytes of Physical Sciences Informatics data, but it is fragmented across decades. **Flame in Freefall** transforms this data into operational, physics-grounded flight intelligence."*
 
 ---
