@@ -325,3 +325,19 @@ This slide-by-slide blueprint maps directly to the official 7-slide maximum rule
 | **Memory RSS Footprint** | **394 MB** | Stable under 1024 MB resource ceiling |
 | **SCBA Tank Weight Reduction**| **40% (13 lbs)** | Civilian firefighter air tank weight saved via Apollo PLSS |
 | **Firefighter Burn Reduction** | **> 60%** | Civilian firefighter burn casualties eliminated via PBI gear |
+
+---
+
+## 11. NASA Space Apps Challenge Super Intelligence (SI) & AI Governance Compliance
+
+This project complies strictly with the NASA Space Apps Challenge Super Intelligence (SI) tool use guidelines:
+
+1. **Disclosure of SI Utilization**:
+   * **Code & Data**: Large Language Models (LLMs) were employed for boilerplate code generation, type hint scaffolding, automated test authoring, and documentation generation. All core combustion physics algorithms (Gaussian Process Regression, conformal uncertainty bands, non-dimensional transport numbers $Pe, Da, \alpha, Gr$, and convex hull guards) are deterministic mathematical models trained directly on verified NASA and Zenodo datasets.
+   * **Retrieval & Safety Circuit Breaker**: The onboard RAG pipeline utilizes local FAISS dense vector search with an empirical cosine similarity cutoff ($\tau = 0.7455$). Generative responses are strictly constrained to factual citations, and the system refuses out-of-scope extrapolation.
+   * **Images & Video**: Demonstration videos were recorded from live web application sessions using Chrome DevTools Protocol automation and carry visible `SI-Assisted Demo` watermarks.
+   * **Audio**: Zero AI-generated synthetic audio was incorporated.
+2. **NASA Branding Protection**:
+   * No NASA logos (meatball or worm), flags, or official insignia are used, modified, or incorporated into any AI-generated assets, ensuring full respect for NASA trademark policies.
+3. **Submission Form Declaration**:
+   * Indicates use of SI tools for Code & Text development and Video/Media automation, while affirming human design architecture, physical reasoning, and mathematical validation.
