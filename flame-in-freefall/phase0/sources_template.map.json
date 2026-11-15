@@ -1,0 +1,19 @@
+{
+  "notes": "Copy per dataset as <csvname>.map.json. Example: thin PMMA opposed-flow table digitized from a paper.",
+  "constants": {
+    "source": "literature",
+    "fuel": "PMMA",
+    "geometry": "flat_thin",
+    "g_level": 0.0,
+    "spread_rate_definition": "steady_opposed_flat",
+    "provenance": "literature:<DOI>"
+  },
+  "columns": {
+    "experiment_id": "test_id",
+    "o2_pct": {"col": "O2_mole_frac", "unit": "fraction", "kind": "o2"},
+    "pressure_kpa": {"col": "P_atm", "unit": "atm", "kind": "pressure"},
+    "flow_velocity_mm_s": {"col": "U_cm_s", "unit": "cm/s", "kind": "velocity"},
+    "thickness_mm": {"col": "thickness_um", "unit": "um", "kind": "length"},
+    "spread_rate_mm_s": {"col": "V_f_cm_s", "unit": "cm/s", "kind": "spread_rate"}
+  }
+}

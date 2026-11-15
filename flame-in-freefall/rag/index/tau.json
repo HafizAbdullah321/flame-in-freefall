@@ -1,0 +1,35 @@
+{
+ "tau": 0.7455338835716248,
+ "embedder": "BAAI/bge-small-en-v1.5",
+ "corpus_signature": "4577ed032f35",
+ "n_in": 40,
+ "n_out": 20,
+ "auc": 0.98625,
+ "in_median": 0.8244054615497589,
+ "out_median": 0.5709518492221832,
+ "out_max": 0.7807794809341431,
+ "in_min": 0.6682937741279602,
+ "train": {
+  "answer_precision": 0.9743589743589743,
+  "answer_recall": 0.95,
+  "fbeta": 0.9693877551020408
+ },
+ "cross_validated": {
+  "answer_precision": 0.9428571428571428,
+  "answer_recall": 0.825,
+  "refusal_precision": 0.72,
+  "refusal_recall": 0.9,
+  "false_answers": 2,
+  "false_refusals": 7
+ },
+ "missed_in_scope": [
+  "What is the SoFIE project?",
+  "What is the LUCI experiment and what gravity levels did it simulate?"
+ ],
+ "wrongly_answered": [
+  "What is the laminar burning velocity of methane at high pressure?"
+ ],
+ "warnings": [
+  "Cross-validation answered some out-of-scope questions."
+ ]
+}

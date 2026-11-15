@@ -1,0 +1,9 @@
+{
+ "embedder": "BAAI/bge-small-en-v1.5",
+ "dim": 384,
+ "n_chunks": 1573,
+ "n_docs": 52,
+ "corpus_signature": "4577ed032f35",
+ "built_at": "2026-11-14T14:11:57.800346+00:00",
+ "chunk_size": 800
+}

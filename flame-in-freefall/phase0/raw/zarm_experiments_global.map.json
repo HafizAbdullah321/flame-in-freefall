@@ -1,0 +1,41 @@
+{
+ "notes": "22 experiments, global mean spread rate (Figure_07) + fuel coverage f* (Figure_06) joined by exact O2 to index.csv (p, flow identical). Drop-tower microgravity, thin PMMA 75 um, opposed flow. Confirm definition of 'global spread rate' in the paper.",
+ "constants": {
+  "source": "literature",
+  "fuel": "PMMA",
+  "geometry": "flat_thin",
+  "g_level": 0.0,
+  "ignition_type": "unknown",
+  "provenance": "zenodo:10.5281/zenodo.18479713 (ZARM drop tower; Proc. Combust. Inst. 42, 106483)"
+ },
+ "columns": {
+  "experiment_id": "exp",
+  "spread_rate_definition": "defn",
+  "fuel_coverage": "f_star",
+  "o2_pct": {
+   "col": "o2_frac",
+   "unit": "fraction",
+   "kind": "o2"
+  },
+  "pressure_kpa": {
+   "col": "p_kpa",
+   "unit": "kPa",
+   "kind": "pressure"
+  },
+  "flow_velocity_mm_s": {
+   "col": "u_mm_s",
+   "unit": "mm/s",
+   "kind": "velocity"
+  },
+  "thickness_mm": {
+   "col": "thick_mm",
+   "unit": "mm",
+   "kind": "length"
+  },
+  "spread_rate_mm_s": {
+   "col": "v_mm_s",
+   "unit": "mm/s",
+   "kind": "spread_rate"
+  }
+ }
+}

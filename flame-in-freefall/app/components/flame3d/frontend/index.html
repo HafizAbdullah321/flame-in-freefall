@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flame in Freefall: 3D flame</title>
+<style>
+  :root { --bg:#141a2e; --text:#ffffff; --panel:#202940; --info:#4dd0e1; --warn:#ffb74d; --err:#FF9E9E; }
+  html, body { margin:0; height:100%; background:var(--bg); border-radius:6px; color:var(--text);
+               font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif; overflow:hidden; }
+  main { height:100%; }
+  #stage { position:relative; width:100%; height:100%; }
+  canvas { display:block; }
+  .hud { position:absolute; padding:8px 12px; background:rgba(20,26,46,.82); border-radius:6px; font-size:14px; line-height:1.4; }
+  #state { top:10px; left:10px; }
+  #state b { color:var(--info); font-weight:500; }
+  #fps { top:10px; right:10px; font-variant-numeric:tabular-nums; color:#b4bdd0; }
+  #note { bottom:10px; left:10px; color:#c8d0e0; font-size:13px; max-width:60%; }
+  #alert { top:50%; left:50%; transform:translate(-50%,-50%); display:none; text-align:center;
+           background:#2a0f14; border:2px solid var(--err); color:#FFE3E3; font-size:18px; font-weight:600; padding:14px 20px; }
+  #panel { position:absolute; right:10px; bottom:10px; width:250px; background:rgba(20,27,51,.92); border-radius:10px;
+           padding:10px 12px; font-size:13px; }
+  #panel label { display:block; margin:6px 0 2px; } #panel input[type=range] { width:100%; }
+  #panel .row { display:flex; gap:12px; align-items:center; }
+  .embedded #panel { display:none; }
+  .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  canvas:focus-visible, button:focus-visible, input:focus-visible { outline:3px solid #ffb74d; outline-offset:2px; }
+  #reset { position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#202940; color:#ffffff; border:1px solid #4dd0e1; border-radius:6px; padding:6px 12px; font-size:14px; cursor:pointer; }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior:auto; } }
+</style>
+</head>
+<body>
+<main aria-label="3D flame illustration">
+<h1 class="sr-only">3D flame illustration</h1>
+<div id="stage">
+  <div id="state" class="hud" aria-live="polite"><b id="gLabel">0g: diffusion-dominated</b><br><span id="rateTxt">Spread rate: n/a</span></div>
+  <div id="fps" class="hud" aria-hidden="true">-- fps</div>
+  <button id="reset" type="button">Reset view</button>
+  <div id="alert" class="hud" role="alert" aria-live="assertive">Experimental Bounds Exceeded</div>
+  <div id="note" class="hud">Stylized illustration, not a simulation of the physics. Speed follows the predicted spread rate.</div>
+  <div id="panel">
+    <strong>Tuning panel</strong>
+    <label>Spread rate: <span id="vRate">4.0</span> mm/s</label><input id="rate" type="range" min="0" max="8" step="0.1" value="4">
+    <label>Oxygen: <span id="vO2">28</span> %</label><input id="o2" type="range" min="21" max="36" step="0.5" value="28">
+    <label>Flow: <span id="vFlow">97</span> mm/s</label><input id="flow" type="range" min="0" max="150" step="1" value="97">
+    <div class="row"><label><input type="radio" name="g" value="0" checked> 0g</label><label><input type="radio" name="g" value="1"> 1g</label></div>
+    <label><input id="out" type="checkbox"> No prediction (OUT)</label>
+    <label><input id="reduce" type="checkbox"> Reduce motion</label>
+  </div>
+</div>
+</main>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script>
+// Roboto is bundled with the dashboard (served at /app/static). Load it only when served over http(s); opening the file directly falls back to system fonts.
+if (location.protocol.indexOf("http") === 0) {
+  const st = document.createElement("style");
+  st.textContent = [300, 400, 500].map(w => "@font-face{font-family:'Roboto';font-weight:" + w + ";font-display:swap;src:url('/app/static/roboto-" + w + ".woff2') format('woff2')}").join("");
+  document.head.appendChild(st);
+}
+</script>
+<script>
+(function () {
+  "use strict";
+  // ---------- pure helpers (also exposed for tests) ----------
+  const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+  const mixf = (a, b, t) => a + (b - a) * t;
+  const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const speedScalar = (rate) => (rate == null ? 0 : clamp(rate / 4.0, 0.35, 1.8));
+  // Stylized soot/colour rule (REQ-S6): 1g is sooty; 0g gets slightly warmer with higher flow and oxygen but stays bluish (capped).
+  function sootMix(g, o2, flow) {
+    if (g >= 0.5) return 0.85 + 0.15 * smooth(21, 36, o2);
+    return clamp(0.25 * smooth(20, 100, flow) * (0.5 + 0.5 * smooth(21, 36, o2)), 0, 0.25);
+  }
+
+  // ---------- state ----------
+  const props = { rate: 4.0, gravity: 0, o2: 28, flow: 97, status: "IN", reduceMotion: false, illustration: false };
+  const S = { speed: speedScalar(4.0), buoy: 0, soot: 0, gray: 0, motion: 1, t: 0, tf: 0 };   // tf = flame time (advances with spread rate)
+  const config = { dtCap: 0.05 };
+  const mq = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)");
+  let osReduce = !!(mq && mq.matches);
+  const targets = () => ({
+    speed: props.status === "OUT" ? 0 : speedScalar(props.rate),
+    buoy: props.gravity >= 0.5 ? 1 : 0,
+    soot: sootMix(props.gravity, props.o2, props.flow),
+    gray: props.status === "OUT" ? 1 : 0,
+    motion: (props.reduceMotion || osReduce) ? 0.25 : 1,
+  });
+
+  // ---------- three.js scene: volumetric flame (ray-marched density field, continuous, no particles) ----------
+  const query = new URLSearchParams(location.search);
+  const LOW = query.get("q") === "low";
+  const stage = document.getElementById("stage");
+  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: "high-performance" });
+  let pixelRatio = LOW ? 0.5 : Math.min(window.devicePixelRatio || 1, 1.5);
+  renderer.setPixelRatio(pixelRatio);
+  renderer.setClearColor(0x141a2e, 1);
+  stage.insertBefore(renderer.domElement, stage.firstChild);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.set(0, 1.35, 4.5);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1.2, 0); controls.enableDamping = true; controls.minDistance = 2.6; controls.maxDistance = 10; controls.update();
+  const cv = renderer.domElement;                                             // accessibility: focusable, described, keyboard-operable
+  cv.setAttribute("tabindex", "0"); cv.setAttribute("role", "img");
+  controls.listenToKeyEvents(cv);                                             // arrow keys move the view when the canvas has focus
+
+  const VERT = "varying vec3 vWorld; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }";
+  const FRAG = `
+precision highp float;
+varying vec3 vWorld;
+uniform float uT, uBuoy, uSoot, uGray, uFlick, uSteps;
+#define MAXSTEPS 64
+float hash(vec3 p){ p = fract(p*vec3(0.1031,0.1030,0.0973)); p += dot(p, p.yxz+33.33); return fract((p.x+p.y)*p.z); }
+float noise(vec3 x){ vec3 i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f);
+  return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x), mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x), mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y), f.z); }
+float fbm(vec3 p){ float a=0.5, s=0.0; for(int i=0;i<4;i++){ s+=a*noise(p); p=p*2.03+vec3(1.7,9.2,3.1); a*=0.5; } return s; }
+
+// returns emission density; 'temp' drives colour, 'blue' = blue-base tint (real flames are blue where fuel and air mix)
+float flameDensity(vec3 p, out float temp, out float blue){
+  // ---- 1g: buoyant teardrop, turbulence advected upward ----
+  float H = 2.3*uFlick;
+  float t = clamp(p.y/H, 0.0, 1.3);
+  vec3 np = vec3(p.x*1.7, p.y*1.2 - uT*1.8, p.z*1.7);
+  float n = fbm(np);
+  vec2 w = vec2(fbm(np+vec3(5.2,1.3,0.0)), fbm(np+vec3(0.0,7.1,3.3))) - 0.5;
+  float turb = 0.10 + 0.60*t;
+  vec2 xz = p.xz + w*turb*0.55;
+  float prof = pow(clamp(sin(3.14159*pow(clamp(t,0.0,1.0),0.72)),0.0,1.0), 0.85);
+  float R = 0.60*prof + 0.015;
+  float s = length(xz)/R;
+  float d1 = clamp(1.0-s, 0.0, 1.0); d1 = d1*d1*(3.0-2.0*d1);
+  d1 *= smoothstep(1.04, 0.80, t) * smoothstep(-0.02, 0.06, p.y);
+  d1 *= 0.55 + 0.9*n;
+  float t1 = clamp(d1*1.25 - 0.45*t + 0.12*n, 0.0, 1.0);
+  float blue1 = smoothstep(0.30, 0.02, t) * smoothstep(0.05, 0.5, d1) * 0.85;
+  // ---- 0g: stable sphere, thin bright reaction shell, slow shimmer ----
+  vec3 pc = p - vec3(0.0, 1.0, 0.0);
+  float n0 = fbm(pc*1.9 + vec3(0.0, 0.0, uT*0.30));
+  float rr = length(pc)/(0.80*(1.0 + 0.16*(n0-0.5)));
+  float k = (rr-0.86)/0.19;
+  float shell = exp(-k*k) * (0.70 + 0.65*n0);
+  float core = smoothstep(1.0, 0.0, rr)*0.40;
+  float d0 = (shell*0.85 + core) * smoothstep(1.3, 1.0, rr);
+  float t0 = clamp(0.50*shell + 0.65*core + 0.18, 0.0, 1.0);
+  temp = mix(t0, t1, uBuoy); blue = mix(0.0, blue1, uBuoy);
+  return mix(d0, d1, uBuoy);
+}
+vec3 warmRamp(float t){ vec3 c=vec3(0.0); c=mix(c,vec3(0.45,0.04,0.0),smoothstep(0.05,0.25,t)); c=mix(c,vec3(1.0,0.42,0.04),smoothstep(0.22,0.48,t));
+  c=mix(c,vec3(1.0,0.82,0.30),smoothstep(0.45,0.72,t)); return mix(c,vec3(1.0,0.97,0.82),smoothstep(0.70,1.0,t)); }
+vec3 coolRamp(float t){ vec3 c=vec3(0.0); c=mix(c,vec3(0.22,0.08,0.55),smoothstep(0.05,0.25,t)); c=mix(c,vec3(0.12,0.38,1.0),smoothstep(0.22,0.48,t));
+  c=mix(c,vec3(0.35,0.85,1.0),smoothstep(0.45,0.72,t)); return mix(c,vec3(0.92,0.99,1.0),smoothstep(0.70,1.0,t)); }
+
+void main(){
+  vec3 ro = cameraPosition, rd = normalize(vWorld - ro);
+  vec3 bmin = vec3(-1.5,-0.4,-1.5), bmax = vec3(1.5,3.2,1.5);
+  vec3 inv = 1.0/rd, a = (bmin-ro)*inv, b = (bmax-ro)*inv, tmn = min(a,b), tmx = max(a,b);
+  float tn = max(max(tmn.x,tmn.y), max(tmn.z,0.0)), tf = min(min(tmx.x,tmx.y), tmx.z);
+  if (tf <= tn) discard;
+  float dt = (tf-tn)/uSteps, jit = hash(vec3(gl_FragCoord.xy, floor(uT*30.0)));
+  vec3 col = vec3(0.0);
+  for (int i=0;i<MAXSTEPS;i++){
+    if (float(i) >= uSteps) break;
+    vec3 p = ro + rd*(tn + (float(i)+jit)*dt);
+    if (length(p.xz) > 1.25 || p.y < -0.3 || p.y > 3.1) continue;
+    float tmp, bl; float d = flameDensity(p, tmp, bl);
+    if (d > 0.003){
+      vec3 c = mix(coolRamp(tmp), warmRamp(tmp), uSoot);
+      c = mix(c, coolRamp(min(tmp+0.1,1.0)), bl);
+      col += c*d*dt*2.6;
+      if (col.r > 2.0 && col.g > 2.0 && col.b > 2.0) break;
+    }
+  }
+  col = 1.0 - exp(-col*1.25);                                   // soft tone-map: no blown-out blobs
+  float lum = dot(col, vec3(0.33,0.34,0.33))*0.8;
+  col = mix(col, vec3(lum), uGray);
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uT: { value: 0 }, uBuoy: { value: 0 }, uSoot: { value: 0 }, uGray: { value: 0 }, uFlick: { value: 1 }, uSteps: { value: LOW ? 14 : 32 } },
+    vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.BackSide,
+  });
+  const box = new THREE.Mesh(new THREE.BoxGeometry(3.0, 3.6, 3.0), mat); box.position.set(0, 1.4, 0); box.frustumCulled = false; scene.add(box);
+
+  // ---------- per-frame update ----------
+  function update(dt) {
+    const T = targets(), k = (rate) => 1 - Math.exp(-rate * dt);
+    S.speed += (T.speed - S.speed) * k(6); S.buoy += (T.buoy - S.buoy) * k(2.5);
+    S.soot += (T.soot - S.soot) * k(2.5); S.gray += (T.gray - S.gray) * k(3); S.motion += (T.motion - S.motion) * k(4);
+    S.t += dt; S.tf += dt * S.speed * S.motion;                 // flame time: frozen when speed -> 0 (no prediction)
+    const u = mat.uniforms;
+    u.uT.value = S.tf; u.uBuoy.value = S.buoy; u.uSoot.value = S.soot; u.uGray.value = S.gray;
+    u.uFlick.value = 1 + 0.06 * S.buoy * Math.sin(6.2831853 * 1.8 * S.t) * (S.motion > 0.5 ? 1 : 0);   // ~1.8 Hz, under 3 Hz
+  }
+
+  // ---------- layout, loop, HUD ----------
+  function resize() {
+    const w = stage.clientWidth || window.innerWidth, h = stage.clientHeight || window.innerHeight;
+    renderer.setPixelRatio(pixelRatio); renderer.setSize(w, h, false);
+    renderer.domElement.style.width = w + "px"; renderer.domElement.style.height = h + "px";
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize); resize();
+  const el = (id) => document.getElementById(id);
+  function hud() {
+    el("gLabel").textContent = props.gravity >= 0.5 ? "1g: buoyancy-driven" : "0g: diffusion-dominated";
+    el("rateTxt").textContent = props.illustration ? "Illustration only: no 1g measurements" :
+      props.status === "OUT" || props.rate == null ? "Spread rate: no prediction" :
+      "Spread rate: " + props.rate.toFixed(2) + " mm/s" + (props.status === "SPARSE" ? " (sparse data)" : "");
+    el("alert").style.display = props.status === "OUT" ? "block" : "none";
+    cv.setAttribute("aria-label", (props.gravity >= 0.5 ? "Teardrop-shaped flame rising under Earth gravity. " : "Round blue flame in microgravity. ") +
+      el("rateTxt").textContent + ". Stylized illustration. Drag or use the arrow keys to move the view, scroll to zoom.");
+  }
+  function setProps(p) { Object.assign(props, p || {}); hud(); }
+  window.setFlameProps = setProps;
+  window.addEventListener("message", (e) => { if (e.data && e.data.type === "flame:props") setProps(e.data.props); });
+  if (mq && mq.addEventListener) mq.addEventListener("change", (e) => { osReduce = e.matches; });
+
+  // adaptive quality: lower the render resolution if the GPU struggles, raise it again when there is headroom
+  let last = performance.now(), frames = 0, fpsT = last, emaMs = 16, slowT = 0, fastT = 0;
+  const MAX_PR = LOW ? 0.5 : Math.min(window.devicePixelRatio || 1, 1.5);
+  function adapt(ms, dt) {
+    emaMs = mixf(emaMs, ms, 0.1);
+    if (LOW) return;
+    if (emaMs > 30) { slowT += dt; fastT = 0; } else if (emaMs < 14) { fastT += dt; slowT = 0; } else { slowT = fastT = 0; }
+    if (slowT > 1.5 && pixelRatio > 0.5) { pixelRatio = Math.max(0.5, pixelRatio - 0.25); slowT = 0; resize(); }
+    if (fastT > 5 && pixelRatio < MAX_PR) { pixelRatio = Math.min(MAX_PR, pixelRatio + 0.25); fastT = 0; resize(); }
+  }
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const raw = (now - last) / 1000, dt = Math.min(raw, config.dtCap); last = now;
+    update(dt); controls.update(); renderer.render(scene, camera); adapt(raw * 1000, raw);
+    frames++; if (now - fpsT > 500) { el("fps").textContent = Math.round(frames * 1000 / (now - fpsT)) + " fps"; frames = 0; fpsT = now; }
+  }
+  requestAnimationFrame(loop);
+
+  // ---------- tuning panel ----------
+  if (window.parent !== window) document.body.classList.add("embedded");
+  const bind = (id, fn) => el(id).addEventListener("input", fn);
+  bind("rate", (e) => { el("vRate").textContent = e.target.value; setProps({ rate: +e.target.value }); });
+  bind("o2", (e) => { el("vO2").textContent = e.target.value; setProps({ o2: +e.target.value }); });
+  bind("flow", (e) => { el("vFlow").textContent = e.target.value; setProps({ flow: +e.target.value }); });
+  document.querySelectorAll("input[name=g]").forEach(r => r.addEventListener("change", (e) => setProps({ gravity: +e.target.value })));
+  bind("out", (e) => setProps({ status: e.target.checked ? "OUT" : "IN" }));
+  bind("reduce", (e) => setProps({ reduceMotion: e.target.checked }));
+  el('reset').addEventListener('click', () => { camera.position.set(0, 1.35, 4.5); controls.target.set(0, 1.2, 0); controls.update(); });
+  hud();
+
+  // ---------- Streamlit component protocol ----------
+  if (window.parent !== window) {
+    const send = (type, data) => window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type }, data), "*");
+    window.addEventListener("message", (e) => {
+      const d = e.data;
+      if (!d || d.type !== "streamlit:render") return;
+      const a = d.args || {};
+      setProps({ rate: a.rate, gravity: a.gravity, o2: a.o2, flow: a.flow, status: a.status || "IN",
+                 reduceMotion: !!a.reduce_motion, illustration: !!a.illustration });
+      if (a.height && stage.style.height !== a.height + "px") {
+        stage.style.height = a.height + "px"; resize(); send("streamlit:setFrameHeight", { height: a.height });
+      }
+    });
+    send("streamlit:componentReady", { apiVersion: 1 });
+  }
+
+  // ---------- test hooks ----------
+  window.__flame = { speedScalar, sootMix, props, S, config, camera, canvas: renderer.domElement, material: mat };
+})();
+</script>
+</body>
+</html>

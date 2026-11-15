@@ -1,0 +1,8 @@
+rag/corpus/
+.streamlit/secrets.toml
+__pycache__/
+*.pyc
+artifacts_real/
+phase0/out_*/
+rag/daily_cap.json
+rag/assistant_log.jsonl

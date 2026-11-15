@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  flame-in-freefall:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flame-in-freefall:latest
+    container_name: flame_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FF_MODEL=/app/backend/artifacts/ff_model.joblib
+      - FF_EXPERIMENTS=/app/phase0/raw/zarm_experiments_global.csv
+      - FF_RAG_DIR=/app/rag
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
