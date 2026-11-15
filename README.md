@@ -352,6 +352,27 @@ Flame-in-Freefall/
 
 ---
 
+## 🤖 Super Intelligence (SI) & AI Attribution Disclosure
+
+In compliance with the **NASA Space Apps Challenge Super Intelligence (SI) Policy**, this project maintains full transparency regarding the utilization of AI / Super Intelligence tools:
+
+### 1. Scope & Utilization of SI Tools
+* **Code & Engineering Assistance**: AI tools (Large Language Models including Claude, Gemini, and GitHub Copilot) were utilized as assistive accelerators for architecture scaffolding, typing annotations, test suite generation, and documentation drafting. The underlying scientific physics models (Gaussian Process Regressors with composite RBF and WhiteNoise kernels, dimensionless scaling calculations for $Pe, Da, \alpha, Gr$, convex hull boundary guards, and FAISS vector indices) are mathematically deterministic, fully auditable, and trained directly on verified NASA Physical Sciences Informatics (PSI) and Zenodo microgravity datasets.
+* **Retrieval-Augmented Grounding & Safety Circuit Breaker**: Natural language search operates through an onboard, air-gapped FAISS dense vector retrieval index (`fastembed` with `BAAI/bge-small-en-v1.5` 384-dimensional embeddings) paired with an automated cosine-similarity refusal gate ($\tau = 0.7455$). Generative AI outputs are strictly constrained; whenever queried outside empirical flight boundaries, the system mathematically refuses to extrapolate and falls back to deterministic rule-based briefs.
+* **Demonstration Videos & Visual Assets**: The live demonstration video (`Flame_in_Freefall_App_Demo_60s.mp4` / `30s.mp4`) captures the actual running Streamlit application driven by headless Chrome DevTools Protocol (CDP) automation, featuring real-time WebGL/Three.js GLSL shader rendering. Video frames incorporate an explicit `SI-Assisted Demo` visible watermark in accordance with challenge guidelines.
+* **Audio**: Zero synthetic or AI-generated audio was used in project media.
+
+### 2. NASA Branding & Design Element Protection
+* **Zero NASA Trademark Usage**: In strict adherence to NASA Space Apps Challenge regulations, no NASA logos (the "meatball" insignia or "worm" logotype), NASA flags, or official mission identifiers are used, generated, or modified within any AI-generated images, videos, or UI elements. All visual assets and typography are original or open-source community standards.
+
+### 3. NASA Space Apps Portal Submission Guidance
+When completing the official NASA Space Apps submission questionnaire, the following options accurately reflect the SI-assisted elements of this project:
+* [x] **Chatbots / LLMs (Code & Text)**: Utilized for software scaffolding, automated test generation, and documentation refinement.
+* [x] **Video & Media Automation**: Utilized for automated UI interaction recording and presentation slide compilation with visible SI watermarking.
+* *(Note: This disclosure satisfies NASA Space Apps Challenge data collection requirements for originality, intent, and execution evaluation).*
+
+---
+
 ## 📜 Detailed Citations & Academic References
 
 1. **ZARM Drop Tower Dataset**: Zenodo Record `18479713` (DOI: `10.5281/zenodo.18479713`), licensed under GPL-3.0-or-later.
