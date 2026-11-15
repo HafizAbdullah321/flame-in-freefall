@@ -112,6 +112,10 @@ Companion to `PRD.md` and `ARCHITECTURE.md`. This specification details the plat
 * **Implementation**: `scripts/make_evaluation.py`, `tests/`
 * **Verification**: Measured p95 prediction latency of $1.91\text{ ms}$, memory RSS of $394\text{ MB}$, zero WCAG accessibility violations, and 27/27 passing automated test suites.
 
+### REQ-E11: Super Intelligence (SI) & NASA Branding Compliance
+* **Implementation**: `README.md`, `PRD.md`, `scripts/record_live_app_video.py`
+* **Verification**: Complete transparent disclosure of SI tool utilization across code, text, metadata, and media; visible watermark on demonstration videos; strictly zero unauthorized use or modification of NASA logos, flags, or mission identifiers.
+
 ---
 
 ## 5. Acceptance Checklist for NASA Space Apps Challenge
@@ -124,3 +128,4 @@ Companion to `PRD.md` and `ARCHITECTURE.md`. This specification details the plat
 - [x] **Honest Spaceflight Boundaries**: Out-of-scope scenarios (Artemis lunar base, Mars gravity) are explicitly labeled `NOT_COVERED` with quantified data gaps.
 - [x] **Civilian Life Protection**: Documents 4 life-saving terrestrial spin-offs (water mist, SCBA tanks, PBI turnout gear, dust-discriminating detectors).
 - [x] **Test & Quality Assurance**: Automated unit, integration, and NFR suites pass with 100% success rate across all modules.
+- [x] **Super Intelligence (SI) Policy & Branding Compliance**: Transparent attribution across README, PRD, and metadata; visible watermark on video demonstrations; zero use or modification of NASA logos, flags, or mission identifiers.
