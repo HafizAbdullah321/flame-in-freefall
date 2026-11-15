@@ -126,6 +126,25 @@ git push -u origin main
 
 ---
 
+## Part G. NASA Space Apps Portal Submission: Super Intelligence (SI) Questionnaire
+
+When submitting your project on the NASA Space Apps Challenge portal, you will be asked about **Super Intelligence (SI) Tool Use** (LLMs, generative models, coding assistants). Use the following guidelines to complete the questionnaire accurately:
+
+### 1. Form Question & Selections
+* **Question**: *"Please review each of the SI-use options and select all that apply to your project. If you did not use Super Intelligence tools/software, please select 'I did not use SI'."*
+* **Selections to Check**:
+  - [x] **Chatbots / LLMs (Code & Text)**: Used for architecture scaffolding, typing annotations, test suite generation, and documentation drafting.
+  - [x] **Video / Media Automation**: Used for automated Chrome CDP app recording and presentation video rendering with visible SI watermarks.
+  - *(Do NOT select 'I did not use SI', as transparent disclosure is officially permitted and valued by judges).*
+
+### 2. Verification Checklist for SI Compliance
+- [x] **Code & Data Disclosure**: Stated clearly in `README.md`, `PRD.md`, and `DATA_CARD.md`.
+- [x] **Video Watermarking**: All demonstration MP4 videos carry a visible `SI-Assisted Demo` or `SI-Assisted Presentation` badge in accordance with challenge rules.
+- [x] **No NASA Branding Violation**: No NASA logos (meatball/worm), flags, or official mission patches are included or altered in any AI-generated graphics or videos.
+- [x] **Audio**: Descriptive text confirms zero synthetic/AI-generated audio.
+
+---
+
 ## What I can still build for you (optional)
 
 Ranking v2 with adjustable weights (C5), extraction of more findings from the NASA documents with your approval of each (C6), report export (C7), natural-language scenarios (C8), summaries (C9). Tell me which, and send `SETUP_REPORT.md` first so I know your documents are in place.
